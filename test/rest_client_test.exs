@@ -2,10 +2,22 @@ defmodule RestClientTest do
   use ExUnit.Case
   doctest RestClient
 
-  test "making a get request?" do
-    SpyServer.start_link(port: 3000)
+  setup do
+    start_supervised({SpyServer, port: 3000})
+    :ok
+  end
 
-    response = RestClient.get(host: 'localhost', port: 3000, path: '/mypath', headers: [{"foo", "bar"}])
+  test "making a get request" do
+    client = RestClient.create()
+
+    response =
+      RestClient.get(client,
+        host: 'localhost',
+        port: 3000,
+        path: '/mypath',
+        headers: [{"foo", "bar"}]
+      )
+
     last_request = SpyServer.get_last_request()
 
     assert response.status_code == 200
@@ -14,10 +26,34 @@ defmodule RestClientTest do
     assert last_request.path == "/mypath"
     assert Enum.member?(last_request.headers, {"foo", "bar"})
   end
+
+  test "nullability" do
+    client = RestClient.create_null()
+
+    response =
+      RestClient.get(client,
+        host: 'localhost',
+        port: 3000,
+        path: '/mypath',
+        headers: [{"foo", "bar"}]
+      )
+
+    last_request = SpyServer.get_last_request()
+
+    assert response.status_code == 200
+    assert last_request == nil
+  end
 end
 
 defmodule SpyServer do
   import Plug.Conn
+
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]}
+    }
+  end
 
   def start_link(port: port) do
     children = [
