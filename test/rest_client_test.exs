@@ -10,7 +10,7 @@ defmodule RestClientTest do
   test "making a get request" do
     client = RestClient.create()
 
-    response =
+    {_client, response} =
       RestClient.get(client,
         host: 'localhost',
         port: 3000,
@@ -27,21 +27,32 @@ defmodule RestClientTest do
     assert Enum.member?(last_request.headers, {"foo", "bar"})
   end
 
-  test "nullability" do
+  test "doesn't talk to the network when null" do
     client = RestClient.create_null()
 
-    response =
+    {_client, response} =
       RestClient.get(client,
         host: 'localhost',
         port: 3000,
-        path: '/mypath',
-        headers: [{"foo", "bar"}]
+        path: '/mypath'
       )
 
     last_request = SpyServer.get_last_request()
 
     assert response.status_code == 200
     assert last_request == nil
+  end
+
+  test "can have its response configured" do
+    client = RestClient.create_null(responses: ["configured response 1", "configured response 2"])
+
+    {client, response} = RestClient.get(client, host: "localhost", port: 3000, path: "/mypath")
+
+    assert response.body == "configured response 1"
+
+    {_client, response} = RestClient.get(client, host: "localhost", port: 3000, path: "/mypath")
+
+    assert response.body == "configured response 2"
   end
 end
 
