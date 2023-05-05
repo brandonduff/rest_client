@@ -46,6 +46,15 @@ defmodule RestClientTest do
     {_client, response} = RestClient.get(client, host: "localhost")
     assert response.body == "configured response 2"
   end
+
+  test "can track requests" do
+    client = RestClient.create_null()
+
+    {client, _response} = RestClient.get(client, host: "myhost", path: "mypath")
+
+    assert client.last_request.host == "myhost"
+    assert client.last_request.path == "mypath"
+  end
 end
 
 defmodule SpyServer do

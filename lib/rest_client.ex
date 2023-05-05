@@ -3,7 +3,12 @@ defmodule RestClient do
     %{}
   end
 
-  def get(%{null: true, responses: [response | rest]} = client, _opts) do
+  # TODO: share request tracking logic between nullable and non-nullable
+  def get(%{null: true, responses: [response | rest]} = client, opts) do
+    host = Keyword.get(opts, :host, "null host")
+    path = Keyword.get(opts, :path, "null path")
+    client = Map.put(client, :last_request, %{host: host, path: path})
+
     {Map.put(client, :responses, rest), %{status_code: 200, body: response}}
   end
 
